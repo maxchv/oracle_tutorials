@@ -1,0 +1,1 @@
+records http://www.oracle.com/technetwork/issue-archive/2012/12-may/o32plsql-1578019.html

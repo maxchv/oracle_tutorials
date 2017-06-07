@@ -103,3 +103,9 @@ exec PROCESS_CUSTOMER(11);
 exec CUSTOM_RECORD(11);
 
 select * from customer where customer_id=11;
+
+create or replace package mypack
+as
+  procedure proc(id in int);
+end;
+/
