@@ -1,0 +1,79 @@
+ Object Type Bank_Account
+
+Before defining an object type that represents a bank account, we must consider the data and operations needed. For a simple bank account, the object type needs attributes for an account number, balance, and status. It also needs methods for the following operations: open account, verify account number, close account, deposit money, withdraw money, and return balance.
+
+First, we write the object type specification, as follows:
+
+CREATE TYPE Bank_Account AS OBJECT ( 
+   acct_number INTEGER(5),
+   balance     REAL,
+   status      VARCHAR2(10),
+   MEMBER PROCEDURE open (amount IN REAL),
+   MEMBER PROCEDURE verify_acct (num IN INTEGER),
+   MEMBER PROCEDURE close (num IN INTEGER, amount OUT REAL),
+   MEMBER PROCEDURE deposit (num IN INTEGER, amount IN REAL),
+   MEMBER PROCEDURE withdraw (num IN INTEGER, amount IN REAL),
+   MEMBER FUNCTION curr_bal (SELF IN OUT Bank_Account, num IN INTEGER)
+      RETURN REAL 
+);
+
+Then, we write the object type body, as follows:
+
+CREATE TYPE BODY Bank_Account AS 
+   MEMBER PROCEDURE open (amount IN REAL) IS
+   -- open account with initial deposit
+   BEGIN
+      IF NOT amount > 0 THEN 
+         RAISE_APPLICATION_ERROR(-20104, `bad amount');
+      END IF;
+      SELECT acct_sequence.NEXTVAL INTO acct_number FROM dual;
+      status := `open';
+      balance := amount;
+   END open;
+
+   MEMBER PROCEDURE verify_acct (num IN INTEGER) IS
+   -- check for wrong account number or closed account
+   BEGIN
+      IF (num <> acct_number) THEN
+         RAISE_APPLICATION_ERROR(-20105, `wrong number');
+      ELSIF (status = `closed') THEN
+         RAISE_APPLICATION_ERROR(-20106, `account closed');
+      END IF;
+   END verify_acct;
+
+   MEMBER PROCEDURE close (num IN INTEGER, amount OUT REAL) IS
+   -- close account and return balance
+   BEGIN
+      verify_acct(num);
+      status := `closed';
+      amount := balance;
+   END close;
+
+   MEMBER PROCEDURE deposit (num IN INTEGER, amount IN REAL) IS
+   BEGIN
+      verify_acct(num);
+      IF NOT amount > 0 THEN 
+         RAISE_APPLICATION_ERROR(-20104, `bad amount');
+      END IF;
+      balance := balance + amount;
+   END deposit;
+
+   MEMBER PROCEDURE withdraw (num IN INTEGER, amount IN REAL) IS
+   -- if account has enough funds, withdraw 
+   -- given amount; else, raise an exception
+   BEGIN
+      verify_acct(num);
+      IF amount <= balance THEN
+         balance := balance - amount;
+      ELSE
+         RAISE_APPLICATION_ERROR(-20107, `insufficient funds');
+      END IF;
+   END withdraw;
+
+   MEMBER FUNCTION curr_bal (SELF IN OUT Bank_Account, num IN INTEGER)
+      RETURN REAL IS
+   BEGIN
+      verify_acct(num);
+      RETURN balance;
+   END curr_bal;
+END;
