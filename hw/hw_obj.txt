@@ -1,6 +1,31 @@
- Object Type Bank_Account
+Object Type Bank_Account
 
-Before defining an object type that represents a bank account, we must consider the data and operations needed. For a simple bank account, the object type needs attributes for an account number, balance, and status. It also needs methods for the following operations: open account, verify account number, close account, deposit money, withdraw money, and return balance.
+Before defining an object type that represents a bank account, we must consider the data and operations needed. 
+For a simple bank account, the object type needs attributes for an account number, balance, and status. 
+It also needs methods for the following operations: open account, verify account number, close account, deposit money, 
+withdraw money, and return balance.
+
+Создать объект банковский счет со следующими атрибутами: номер счета, баланс и статус (открыт, закрыт, заблокирован).
+Добавить процедуры: открыть учетную запись, проверить номер счета, закрыть счет, внести деньги, снять деньги, 
+отобразить информацию (номер счета, баланс, статус), функцию получить баланс.
+
+Процедуру открыть счет принимает начальную сумму (проверить что больше 0, иначе сгенерировать ошибку используя
+функцию RAISE_APPLICATION_ERROR), сохраняет эту сумму в балансе и задает статус счета 'открыт'.
+
+Процедура проверки номера счета принимает номер счета и проверяет значение аргумента с номером (если не совпадает,
+то выдает ошибку через RAISE_APPLICATION_ERROR), также если счет закрыт выдает ошибку.
+
+Процедура закрытия счета принимает номер счета, и сумму как выходной параметр. Необходимо проверить счет и если он
+верный, то установить статус в закрыт и вернуть сумму.
+
+Реализовать процедуры снятия со счета и внести деньги на счет (проверять предварительно счет и сумму вносимых/снимаемых денег на значение > 0).
+
+Функция получения баланса возвращает текущий баланс после проверки счета.
+
+На базе созданного объекта создать таблицу.
+
+Создать не менее 3 объектов, которые сохранить в таблице.
+
 
 First, we write the object type specification, as follows:
 
@@ -17,7 +42,6 @@ CREATE TYPE Bank_Account AS OBJECT (
       RETURN REAL 
 );
 
-Then, we write the object type body, as follows:
 
 CREATE TYPE BODY Bank_Account AS 
    MEMBER PROCEDURE open (amount IN REAL) IS
@@ -77,3 +101,52 @@ CREATE TYPE BODY Bank_Account AS
       RETURN balance;
    END curr_bal;
 END;
+
+Defining Constructors
+
+By default, you do not need to define a constructor for an object type. The system supplies a default constructor that accepts a parameter corresponding to each attribute.
+
+You might also want to define your own constructor:
+
+To supply default values for some attributes. You can ensure the values are correct instead of relying on the caller to supply every attribute value.
+To avoid many special-purpose procedures that just initialize different parts of an object.
+To avoid code changes in applications that call the constructor, when new attributes are added to the type. The constructor might need some new code, for example to set the attribute to null, but its signature could remain the same so that existing calls to the constructor would continue to work.
+For example:
+
+CREATE OR REPLACE TYPE rectangle AS OBJECT
+(
+-- The type has 3 attributes.
+  length NUMBER,
+  width NUMBER,
+  area NUMBER,
+-- Define a constructor that has only 2 parameters.
+  CONSTRUCTOR FUNCTION rectangle(length NUMBER, width NUMBER)
+    RETURN SELF AS RESULT
+);
+/
+
+CREATE OR REPLACE TYPE BODY rectangle AS
+  CONSTRUCTOR FUNCTION rectangle(length NUMBER, width NUMBER)
+    RETURN SELF AS RESULT
+  AS
+  BEGIN
+    SELF.length := length;
+    SELF.width := width;
+-- We compute the area rather than accepting it as a parameter.
+    SELF.area := length * width;
+    RETURN;
+  END;
+END;
+/
+
+DECLARE
+  r1 rectangle;
+  r2 rectangle;
+BEGIN
+-- We can still call the default constructor, with all 3 parameters.
+  r1 := NEW rectangle(10,20,200);
+-- But it is more robust to call our constructor, which computes
+-- the AREA attribute. This guarantees that the initial value is OK.
+  r2 := NEW rectangle(10,20);
+END;
+/
